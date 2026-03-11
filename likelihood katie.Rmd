@@ -1,29 +1,88 @@
----
-title: "likelihood"
-output: pdf_document
-date: "2026-03-10"
----
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r}
+t <- 8
+n <- 170
+mle <- 154/162
+mle <- (n-2*t)/(n-t)
+se <- 1/sqrt(8/((1-mle)^2)-170/((2-mle)^2))
+z <- qnorm(0.975)
+
+#wrong i think
+lower <- mle - z * se
+upper <- mle + z * se
+
+cat("[",lower,", ",upper,"]",sep="")
+
+#second deriv is positive??
+```
+$$f(t)={170 \choose t}\pi^t(1-\pi)^{170-t} \ t=0,1,2,...,170$$
+$$\pi=\frac{1-\psi}{2-\psi}$$
+$$f(t)={170 \choose t}(\frac{1-\psi}{2-\psi})^{t}(\frac{1}{2-\psi})^{170-t}$$
+$$L(\psi)={170 \choose 8}(\frac{1-\psi}{2-\psi})^8(\frac{1}{2-\psi})^{162}$$
+$$\ell(\psi)=ln{170 \choose 8}+8ln(1-\psi)-8ln(2-\psi)+162ln1-162ln(2-\psi)$$
+$$\frac{d}{d\psi}\ell(\psi)=0-\frac{8}{1-\psi}+\frac{8}{2-\psi}+0+\frac{162}{2-\psi}=0$$
+$$\frac{170}{2-\psi}=\frac{8}{1-\psi}$$
+$$170-170\psi=16-8\psi$$
+$$154=162\psi$$
+$$\widehat{\psi}_0^{mle}=\frac{154}{162}\approx 0.9506$$
+## Second Derivative Test
+
+$$\frac{d^2}{d\psi^2}\ell(\psi)=-\frac{8}{(1-\psi)^2}+\frac{170}{(2-\psi)^2}$$
+
+```{r}
+log_lik <- function(psi){
+  log(choose(170,8))+8*log(1-psi)-8*log(2-psi)-162*log(2-psi)
+}
+
+second_deriv <- function(psi){
+  -8/((1-psi)^2) + 170/((2-psi)^2)
+}
+
+ggplot() +
+  geom_function(fun=second_deriv, xlim=c(-100,1)) +
+  ylim(c(-1,1))
+#positive if psi is positive
+```
+## Bootstrappin
+
+```{r}
+set.seed(414)
+#use MOM or MLE estimate?
+
+B <- 10000
+sample_size <- 15
+pi <- (1-mle)/(2-mle)
+
+boot_df <- as.data.frame(replicate(n=B, expr={x <- rbinom(n=1,size=170, prob=pi)
+                     (170 - 2*x)/(170-x)
+                    }))
+names(boot_df) <- c("est")
+boot_df
+
+lwr <- quantile(boot_df$est, 0.025)
+upr <- quantile(boot_df$est, 0.975)
+
+cat("[",lwr,", ",upr,"]",sep="")
+```
+##Likelihood ratio significance test
+```{r}
+# H0: psi is 0.3 . H1: otherwise
+null <- 0.3
+W <- 2*log_lik(mle)-2*log_lik(null)
+pchisq(W, df=1, lower.tail=F)
 ```
 
-## R Markdown
+##Empirical p value
+```{r}
+set.seed(342)
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+unifs <- replicate(n=B, expr={x <- sample(size=1, 1:170, replace=T)
+                    mle <- (170-2*x)/(170-x)
+                    W <- 2*log_lik(mle)-2*log_lik(null)
+                    })
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+sum(unifs>W, na.rm=T)
 
-```{r cars}
-summary(cars)
+
+
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
