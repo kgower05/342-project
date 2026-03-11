@@ -1,0 +1,54 @@
+---
+title: "Bayesian Inference"
+author: "Viki Hristova"
+date: "2026-03-11"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+# Probability of vaccine efficacy if beta prior is (1, 1)
+pbeta(7/17, 1, 1)
+
+# Selecting prior values
+library(LearnBayes)
+beta.select(quantile1 = list(p = 0.05, x = 7/17),
+            quantile2 = list(p = 0.5, x = 0.5))
+
+# Plot of posterior and prior
+ggplot() +
+  geom_function(fun = dbeta,
+                mapping = aes(color = "prior"),
+                args = list(shape1 = 43.04, 43.04),
+                xlim = c(0, 1)) +
+  geom_function(fun = dbeta,
+                mapping = aes(color = "posterior"),
+                args = list(shape1 = 51.04, (170 - 8 + 43.04)),
+                xlim = c(0, 1))
+
+# Getting median and interval
+posterior_median_pi <- qbeta(0.5, shape1 = 43.04 + 8, shape2 = 170 - 8 + 43.04)
+round(posterior_median_pi, 4)
+
+qbeta(p = c(0.025, 0.975), shape1 = 51.04, shape2 = 205.04)
+library(HDInterval)
+hdi(qbeta, credMass = 0.95, shape1 = 51.04, shape2 = 205.04)
+
+# After plugging in for probabilities interval for psi by hand
+# Can put calculation in latex/R code later:
+psi_int <- c(0.6692, 0.8217)
+psi_int
+# Interpretation: 95% probability that the proportion of vaccine efficacy is in the range 66.92% to 82.17%
+
+# Inference / P value
+# What does Bayesian say about the null hypothesis of 30%?
+# Get 0.3 pi value:
+posterior_0.3_pi <- qbeta(0.3, shape1 = 43.04 + 8, shape2 = 170 - 8 + 43.04)
+round(posterior_0.3_pi, 4)
+
+# Using this, probability psi > 0.7720 = 0.3
+# Unsure what this means on the P-value?
+```
