@@ -1,0 +1,159 @@
+---
+title: "Your Paper Title Here"
+author: "Alison , Katie, Viki"
+date: Date
+output: pdf_document
+urlcolor: blue
+header-includes:
+- \usepackage{amsmath,amsfonts,amssymb}
+- \usepackage{setspace} \doublespacing
+fontsize: 11pt
+---
+
+```{r setup, include=FALSE}
+#Use this code chunk to include libraries, and set global options.
+```
+
+# Abstract
+Write your abstract here.
+
+# Keywords
+*Keyword 1*, *Keyword 2*, *Keyword 3*, *Keyword 4*
+
+\newpage
+
+# Introduction / Background
+In December 2020, Pfizer and BioNTech began distributing their two dose vaccine for COVID-19. 
+
+The data comes from blah blah blah
+
+make a segmented barplot and table of data (side by side)
+
+From the initial data we have these statistics. 
+
+```{r intro, eval=TRUE, echo=FALSE}
+library(knitr)
+library(ggplot2)
+
+#data table
+vaccine_table <- data.frame( Group = c("BNT162b2", "Placebo", "Total"), Cases = c(8, 162, 170), Sample_size = c(17411, 17511, 34922))
+
+kable(vaccine_table, caption = "Table 1: Vaccine Efficacy against Covid-19 at least 7 days after second dose in patients without evidence of infection")
+
+# summary stats table
+summary_table <- data.frame( Statistic = c( "$\\hat{\\pi}_v$ (vaccine infection probability)", "$\\hat{\\pi}_p$ (placebo infection probability)", "$RR$ (relative risk)", "$\\psi$ (vaccine efficacy)"),
+  Formula = c("$8/17411$", "$162/17511$", "$\\hat{\\pi}_v/\\hat{\\pi}_p$", "$1 - \\hat{\\pi}_v/\\hat{\\pi}_p$"),
+  Estimate = c(8/17411, 162/17511, (8/17411)/(162/17511), 1 - (8/17411)/(162/17511)))
+
+kable(summary_table, caption = "Estimated Risk and Vaccine Efficacy", digits = 6)
+
+cases <- data.frame( Group = c("BNT162b2", "Placebo"), Cases = c(8, 162) ) 
+ggplot(cases, aes(x = "Cases", y = Cases, fill = Group)) + geom_bar(stat = "identity") + labs(x = "", y = "Number of Cases", title= "COVID-19 Cases by Treatment Group")
+```
+
+
+
+# Statistical Methods
+
+## Model
+  Instead of looking at two independent binomial models, since the trial ran until a predetermined 170 observations of COVID-19 infections across both groups was observed, we can use a single binomial random variable as our statistical model (refer to appendix for proof). We can denote random variable T as the number in the vaccine group from the total 170 observations of infection. T can be modeled as (refer to appendix for proof): 
+$$T \approx Binom(n=170, \pi)$$
+  Here $t_{obs}=8$ and $\pi=P(\text{case occured in vaccine group})$. We can write $\pi$ as $\pi=\frac{\pi_vn_v}{\pi_vn_v+\pi_pn_p}=\frac{\pi_v}{\pi_v+\pi_p}$ since the sample sizes of the group receiving the placebo and the group receiving the vaccine are roughly the same ($n_p\approx n_v$). 
+
+  Our parameter of interest is vaccine efficacy. We can rewrite this, $\psi$, in terms of $\pi$ to get (refer to appendix for proof): $$\psi = \frac{1-2\pi}{1-\pi} \qquad -\infty < \psi < 1$$
+
+  With this we can also find $\pi$ in terms of $\psi$ for later use in our Frequentist and Bayesian analysis of our data. We get (refer to appendix for proof): $$\pi=\frac{1-\psi}{2-\psi}\qquad 0 < \pi < 1$$
+
+  Because the FDA requires at least $30\%$ efficacy for a new therapy to be approved, the hypothesis we are interested in testing for both approaches is $$H_0: \psi=0.3 \qquad   H_1:\psi>0.3$$
+
+
+## Likelihood Inference
+Detail the likelihood approach.
+
+## Bayesian Inference
+Detail the Bayesian approach.
+
+# Results
+Present your findings. 
+
+# Discussion / Conclusion
+Discuss / conclude here.
+
+# Bibliography
+
+Brown, B. (2024). *Lecture Title*. Lecture slides, Course Name, University Name.
+
+Doe, J. (2020). Title of the Paper. *Journal Name*, 12(3), 45-67.
+
+Last, F., & Last, F. (2025). *Book Title*. Publisher.
+
+Smith, A., & Johnson, C. (2023). *Title of the Online Article*. Retrieved from https://www.example.com.
+
+# Appendix
+
+## Code
+```{r ref.label = "important_R_code", eval=FALSE}
+```
+
+## Proofs
+
+#### Proof that $T \approx Binom$: 
+
+We start with our two independent binomial models $X \backsim Binom(n_v,\pi_v)$ and $Y\backsim Binom(n_p, \pi_p)$. Here, X is the number of COVID-19 cases in the vaccine group and Y is the number of COVID-19 cases in the placebo group. Restricting our attention to only the COVID-19 cases, we can define the random variable $T$ as the number of COVID-19 cases in the vaccine group given that the total number of COVID-19 cases in both groups is 170. In other words, $T$ is the value of $X$ given $X+Y=170$.
+
+So, we can find the PMF of $T$ by:
+$$P(T=t) = P(X=t|X+Y = n) \qquad t=0,1,\dots, n$$
+$$=\frac{P(X=t \cap X+Y=n)}{P(X+Y = n)}$$
+$$=\frac{P(X=t \cap Y=n-t)}{P(X+Y = n)}$$
+Since X and Y are independent, $$=\frac{P(X=t) \times P(Y=n-t)}{P(X+Y = n)}$$
+
+We'll come back to this, but for now, referring back to table 2 in the introduction, we can see that $n_v$ and $n_p$ are very large and $\pi_v$ and $\pi_p$ are very small. So, these two binomial models can be approximated by 2 independent poisson distribution: $X\approx Pois(\lambda_v)$ and $Y\approx Pois(\lambda_p)$ where $\lambda_v = n_v\pi_v$ and $\lambda_p=n_p\pi_p$. 
+
+For a poisson distribution $P(X=x)=\frac{\lambda^x e^{-\lambda}}{x!}$ So, 
+$$P(X=t)=\frac{\lambda_v^t e^{-\lambda_v}}{t!} \qquad P(Y=n-t)=\frac{\lambda_p^{n-t} e^{-\lambda_p}}{(n-t)!}$$
+Since the two poisson distributions are still independent of each other, we can add them to get $X+Y \backsim Pois(\lambda_v + \lambda_p)$. So,
+$$P(X+Y=n)=\frac{(\lambda_p+\lambda_v)^{n} e^{-\lambda_p-\lambda_v}}{n!}$$
+Plugging these into the PMF we found for $T$, we get: 
+$$P(T=t)=\frac{\frac{\lambda_v^t e^{-\lambda_v}}{t!} \times \frac{\lambda_p^{n-t} e^{-\lambda_p}}{(n-t)!}}{\frac{(\lambda_p+\lambda_v)^{n} e^{-\lambda_p-\lambda_v}}{n!}}$$
+$$P(T=t)=\frac{n!}{t!(n-t)!} \times \frac{\lambda_v^t\lambda_p^{n-t} e^{-\lambda_p}e^{-\lambda_v}}{(\lambda_p+\lambda_v)^{n} e^{-\lambda_p-\lambda_v}}$$
+$$P(T=t)=\frac{n!}{t!(n-t)!} \times \frac{\lambda_v^t\lambda_p^{n-t}}{(\lambda_p+\lambda_v)^{n}}$$
+$$P(T=t)=\frac{n!}{t!(n-t)!} \times \frac{\lambda_v^t\lambda_p^{n-t}}{(\lambda_p+\lambda_v)^{t}(\lambda_p+\lambda_v)^{n-t}}$$
+
+$$P(T=t)=\frac{n!}{t!(n-t)!} \times \frac{\lambda_v^t}{(\lambda_p+\lambda_v)^{t}} \times \frac{\lambda_p^{n-t}}{(\lambda_p+\lambda_v)^{n-t}}$$
+$$\text{The choose function: }\frac{n!}{t!(n-t)!} = {n \choose t}$$
+$$P(T=t)={n \choose t} \times (\frac{\lambda_v}{(\lambda_p+\lambda_v)})^{t} \times (\frac{\lambda_p}{(\lambda_p+\lambda_v)})^{n-t}$$
+We can rewrite the third term $(\frac{\lambda_p}{(\lambda_p+\lambda_v)})^{n-t}$ as $$(1-\frac{\lambda_v}{(\lambda_p+\lambda_v)})^{n-t}$$
+
+$$P(T=t)={n \choose t} \times (\frac{\lambda_v}{(\lambda_p+\lambda_v)})^{t} \times (1-\frac{\lambda_v}{(\lambda_p+\lambda_v)})^{n-t}$$
+And yay! Looking at this closely, this is the binomial PMF for $Binom(n,\frac{\lambda_v}{(\lambda_p+\lambda_v)})$. So, we can say $$T\approx Binom(n,\frac{\lambda_v}{(\lambda_p+\lambda_v)})$$ since $\lambda_v = n_v\pi_v$ and $\lambda_p=n_p\pi_p$, we can say $$T \approx Binom(n,\frac{n_v\pi_v}{n_p\pi_p+n_v\pi_v}) \qquad \text{where } n=170$$
+
+Finally, knowing that $n=170$ and since $n_v$ and $n_p$ are really large, we can say for $\pi=\frac{\pi_v}{\pi_p+\pi_v}$ $$T\approx Binom(170, \pi)$$
+
+
+
+
+
+
+#### Proof of $\psi = \frac{1-2\pi}{1-\pi}$:
+
+The definition of vaccine efficacy ($\psi$) is: $\psi = 1-\frac{\pi_v}{\pi_p}$, we can rewrite this in terms of $\pi$ using:
+$$\pi=\frac{\pi_v}{\pi_v+\pi_p}$$
+$$\pi(\pi_v+\pi_p)=\pi_v$$
+$$\pi\pi_v+\pi\pi_p=\pi_v$$
+$$\pi\pi_p=\pi_v-\pi\pi_v$$
+$$\pi\pi_p=\pi_v(1-\pi)$$
+$$\frac{\pi_v}{\pi_p}=\frac{\pi}{1-\pi}$$
+
+Plugging $\frac{\pi_v}{\pi_p}=\frac{\pi}{1-\pi}$ into $\psi = 1-\frac{\pi_v}{\pi_p}$, we get: $$\psi = 1-\frac{\pi}{1-\pi}$$ $$\psi = \frac{1-\pi}{1-\pi}-\frac{\pi}{1-\pi}$$ $$\boxed{\psi = \frac{1-2\pi}{1-\pi} \qquad -\infty < \psi < 1}$$
+
+
+#### Proof of $\pi=\frac{1-\psi}{2-\psi}$:
+
+Using the equation we deduced in the previous proof we can rearrange $\psi = \frac{1-2\pi}{1-\pi}$ to create an equation for $\pi$ in terms of $\psi$. 
+$$\psi = \frac{1-2\pi}{1-\pi}$$
+$$\psi(1-\pi) = 1-2\pi$$
+$$\psi-\psi\pi = 1-2\pi$$
+$$2\pi-\psi\pi = 1-\psi$$
+$$\pi(2-\psi) = 1-\psi$$
+We finally get $$\boxed{\pi = \frac{1-\psi}{2-\psi} \qquad 0 < \pi < 1}$$
+
