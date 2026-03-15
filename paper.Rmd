@@ -1,0 +1,301 @@
+---
+title: "Your Paper Title Here"
+date: "March 15 2026"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+urlcolor: blue
+header-includes:
+- \usepackage{amsmath,amsfonts,amssymb}
+- \usepackage{setspace} \doublespacing
+fontsize: 11pt
+editor_options:
+  markdown:
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+#Use this code chunk to include libraries, and set global options.
+require(ggplot2)
+require(fastR2)
+```
+
+\begin{table}[h]
+\centering
+\begin{tabular}{p{0.3\linewidth} p{0.65\linewidth}}
+\textbf{Name} & \textbf{Contribution} \\[0.5em]
+
+Alison Tan & Model, Visualizations, Appendix Proofs \\[0em]
+
+Katie Gower & Likelihood Analysis, Abstract, Introduction,  \\[0em]
+
+Viki Hristova & Bayesian Analysis, Conclusion \\[0em]
+
+
+\end{tabular}
+\end{table}
+
+# Abstract
+
+Write your abstract here.
+
+## Keywords
+
+*Likelihood Analysis*, *Bayesian Statistics*, *Frequentist Statistics*, *Vaccine Efficacy*
+
+\newpage
+
+# Introduction & Background
+
+
+
+
+```{r label="r1", eval=TRUE, echo=FALSE}
+# You can reference your code in the appendix (sample here).
+```
+
+# Statistical Methods
+
+## Model
+
+Describe the statistical model used.
+
+## Likelihood Inference
+
+We are interested in $\psi$, the efficacy of the vaccine.
+
+
+
+```{r label="r2", eval = T, echo = F}
+data <- data.frame(Group=c("BNT162b2","Placebo","Total"), Cases=c(8,162,170), Sample_size=c(17411,17511,34922))
+
+t <- data[data$Group=="BNT162b2", "Cases"]
+n <- data[data$Group=="Total", "Cases"]
+mle <- (n-2*t)/(n-t)
+se <- 1/sqrt(8/((1-mle)^2)-170/((2-mle)^2))
+z <- qnorm(0.975)
+
+lower <- mle - z * se
+upper <- mle + z * se
+
+cat("[",lower,", ",upper,"]",sep="")
+```
+Using the distribution of T detailed above, this is its probability distribution function, where $\pi$ is the probability of each of the 170 covid cases being from the vaccine group:
+
+$$f(t)={170 \choose t}\pi^t(1-\pi)^{170-t}, \ \ \ t=0,1,...,170$$
+
+Using the proof in the appendix, we can write $\pi$ in terms of vaccine efficacy $\psi$. $\pi=\frac{1-\psi}{2-\psi}$.
+
+$$f(t)={170 \choose t}(\frac{1-\psi}{2-\psi})^{t}(\frac{1}{2-\psi})^{170-t}, \ \ \ t=0,1,...,170$$
+
+The generalized likelihood function of $\psi$ is the following:
+$$L(\psi)={170 \choose t}(\frac{1-\psi}{2-\psi})^t(\frac{1}{2-\psi})^{170-t}$$
+
+Now, the log-likelihood function:
+$$\ell(\psi)=ln{170 \choose t}+tln(1-\psi)-170ln(2-\psi)+(170-t)ln1$$
+
+$\widehat{\psi}_0^{mle}$ will be the value of $\psi$ such that the first derivative of the log-likelihood function is 0, and where the second derivative is analyzed to confirm that it is the global maximum.
+
+$$\frac{d}{d\psi}\ell(\psi)=-\frac{t}{1-\psi}+\frac{170}{2-\psi}=0$$
+
+
+
+$$\frac{170}{2-\psi}=\frac{t}{1-\psi}$$
+$$170-170\psi=2t-t\psi$$
+
+$$154=162\psi$$ $$\widehat{\psi}_0^{mle}=\frac{170-2t}{170-t}$$
+Since $T$ is binomial, the maximum likelihood estimate of $\pi$ is $\frac{t}{170}$. MLEs are invariant to transformation, so since $\psi=\frac{1-2\pi}{1-\pi}$, $\widehat{\psi}_0^{mle}=\frac{1-2\frac{t}{170}}{1-\frac{t}{170}}=\frac{170-2t}{170-t}$, which is the same result as received with maximizing the likelihood function.
+
+### Second Derivative Test
+
+$$\frac{d^2}{d\psi^2}\ell(\psi)=-\frac{8}{(1-\psi)^2}+\frac{170}{(2-\psi)^2}$$
+
+```{r label = "r3", eval = T, echo = F}
+log_lik <- function(psi){
+  log(choose(170,8))+8*log(1-psi)-8*log(2-psi)-162*log(2-psi)
+}
+
+second_deriv <- function(psi){
+  -8/((1-psi)^2) + 170/((2-psi)^2)
+}
+
+ggplot() +
+  geom_function(fun=second_deriv, xlim=c(-100,1)) +
+  theme_bw() +
+  labs(title="Second Derivative of the Log-likelihood Function") +
+  xlab("Psi (Vaccine Efficacy)") +
+  ylab("Likelihood")
+```
+
+The range of $\psi$ is $-\infty <\psi <1$. The second derivative of the log-likelihood function is positive for much of that range and is only negative between 0.723 and 1. This makes it difficult to confirm that 0.9506 is the global maximum likelihood estimate analytically. Instead, we'll look at a graph to confirm the maximum.
+
+```{r label = "r4", eval = T, echo = F}
+ggplot() +
+  geom_function(fun=log_lik, xlim=c(-1,1)) +
+  geom_vline(aes(xintercept=mle), color='red') +
+  theme_bw() +
+  labs(title="Log-likelihood Function with t=8") +
+  xlab("Psi (Vaccine Efficacy)") +
+  ylab("Log-likelihood")
+```
+Between -1 and 1, the root of the first derivative has its maximum at 0.9506, our MLE. Below 0.9506, the first derivative is always positive, meaning that 0.9506 is the global maximum as well.
+
+
+To assess the ease of finding $\widehat{\psi}_0^{mle}$ iteratively, here is the log-likelihood function when $t=8$ next to its second order Taylor series. Because of numerical difficulties, the function is plotted in terms of $\pi$, not $\psi$, but the convergence of the two functions is the same as what it would be in terms of $\psi$.
+
+```{r, label="r5", warning=F, eval = T, echo = F}
+log_lik_pi <- function(pi){
+  log(choose(170,8))+8*log(pi)+162*log(1-pi)
+}
+
+ml <- maxLik2(loglik=log_lik_pi, start=0.5)
+
+plot(ml) + 
+  theme_bw() +
+  labs(title="Log-likelihood when t = 8") +
+  xlab("Pi") 
+```
+
+Between the two blue lines, the log-likelihood function matches the second order Taylor expansion well. This means that the log-likelihood function is close enough to polynomial that the second order Taylor series is a good function to find the MLE with.
+
+They diverge farther from the MLE, because the log-likelihood function is not polynomial and it's only the second order Taylor approximation, so the approximation does not last.
+
+
+
+### Bootstrapping
+
+Now, to find a confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE, and 
+These values were generated from the distribution of $T$ with $\pi$ determined by our estimate of the vaccine efficacy, $0.9506$.
+
+We'll then take the 2.5th and 97.5th percentiles of the generated values to find the middle 95% of the set. Those numbers will be the bounds of the confidence interval for the vaccine efficacy $\psi$.
+
+```{r}
+set.seed(414)
+
+B <- 10000
+sample_size <- 15
+pi <- (1-mle)/(2-mle)
+
+boot_df <- as.data.frame(replicate(n=B, expr={x <- rbinom(n=1,size=170, prob=pi)
+                     (170 - 2*x)/(170-x)
+                    }))
+names(boot_df) <- c("est")
+
+lwr <- quantile(boot_df$est, 0.025)
+upr <- quantile(boot_df$est, 0.975)
+
+cat("[",lwr,", ",upr,"]",sep="")
+```
+
+###Likelihood ratio significance test
+
+Now, we'll perform a significance test on the maximum likelihood estimate using the chi square distribution. This is a two-sided significance test, where the alternative hypothesis is that $\psi$ is not 0.3. 
+
+```{r}
+# H0: psi is 0.3 . H1: otherwise
+null <- 0.3
+W <- 2*log_lik(mle)-2*log_lik(null)
+pchisq(W, df=1, lower.tail=F)
+```
+The p-value is very close to 0. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3.
+
+###Empirical p value
+
+```{r} 
+set.seed(414)
+
+unifs <- replicate(n=B, expr={x <- rbinom(n=1, size=170, prob=(0.7/1.7))
+                    mle <- (170-2*x)/(170-x)
+                    W <- 2*log_lik(mle)-2*log_lik(null)
+                    })
+
+pvalue <- sum(unifs>W, na.rm=T)/B
+cat("Proportion Exceeding W:", pvalue)
+
+```
+
+For an empirical p-value, 10,000 values of $T$ were drawn from the distribution associated with the null hypothesis: that the vaccine efficacy was 30%. This meant the trials of $T$ each had a $\frac{1-0.3}{2-0.3}=\frac{7}{17}$ probability of being from the vaccine group.
+
+
+When calculating the estimate based on a 10,000 values from the null distribution- binomial with size 170 and probability $\frac{0.7}{1.7}$. This distribution is chosen because it reflects the null hypothesis that the vaccine efficacy is $0.3$. 
+
+The empirical p-value was 0. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3. 
+
+In both methods for finding a p-value, the null hypothesis was rejected.
+
+## Bayesian Inference
+
+#Results
+
+$$154=162\psi$$ $$\widehat{\psi}_0^{mle}=\frac{170-2t}{170-t}=\frac{154}{162}\approx 0.9506$$
+
+The maximum likelihood estimate for the efficacy of the BNT162b2 vaccine is 0.9506, or 95.06%.
+
+# Discussion & Conclusion
+
+
+# Bibliography
+
+Polack et al. (2020). Safety and Efficacy of the BNT162b2 mRNA Covid-19 Vaccine. *New England Journal of Medicine*, 383(27).
+
+Grove, R. (2026). *Physician's Health Study*. Lecture slides, Introduction To Probability And Mathematical Statistics III, University of Washington.
+
+
+
+Smith, A., & Johnson, C. (2023). *Title of the Online Article*.
+Retrieved from <https://www.example.com>.
+
+#Appendix
+
+#Code
+
+## Likelihood
+
+```{r ref.label = "r1", eval = FALSE}
+```
+```{r ref.label = "r2", eval = FALSE}
+```
+```{r ref.label = "r3", eval = FALSE}
+```
+```{r ref.label = "r4", eval = FALSE}
+```
+
+### Derivation of log-likelihood function in terms of pi
+$$f(t)={170 \choose t}\pi^t(1-\pi)^{170-t}, \ \ \ t=0,1,...,170$$
+
+$$L(\pi)={170 \choose 8}\pi^8(1-\pi)^{162}$$
+
+$$\ell(\pi)=ln{170 \choose 8}+8ln\pi+162ln(1-\pi)$$
+
+```{r ref.label = "r5", eval = FALSE}
+```
+
+##Something fun
+
+```{r, warning=F}
+v <- c()
+for(x in 1:99){
+v <- c(v,maxLik2(loglik=log_lik_pi, start=(x/100))$iterations)
+}
+
+
+plot(x=1:99/100, y=v,
+     main="Number of iterations needed in Newton Raphson depending on start value",
+     xlab="Start value (Pi)",
+     ylab="Number of iterations",
+     ylim=c(0,12)) 
+abline(v=0.04705882, col='blue')
+  
+```
+
+
+The log-likelihood function in question is the log-likelihood of $\pi$. NaNs are produced during many of the Newton Raphson iterations, probably from trying to calculate the natural log of a negative number, but all 99 values converge to the same estimate, so there must be a recovery process after encountering an NaN.
+
+
+
+##Proofs
+
+
+
+
