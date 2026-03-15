@@ -26,7 +26,7 @@ require(fastR2)
 \begin{tabular}{p{0.3\linewidth} p{0.65\linewidth}}
 \textbf{Name} & \textbf{Contribution} \\[0.5em]
 
-Alison Tan & Model, Visualizations, Appendix Proofs \\[0em]
+Alison Tan & Model, Appendix Proofs \\[0em]
 
 Katie Gower & Likelihood Analysis, Abstract, Introduction,  \\[0em]
 
@@ -51,10 +51,6 @@ Write your abstract here.
 
 
 
-```{r label="r1", eval=TRUE, echo=FALSE}
-# You can reference your code in the appendix (sample here).
-```
-
 # Statistical Methods
 
 ## Model
@@ -66,7 +62,7 @@ Describe the statistical model used.
 We are interested in $\psi$, the efficacy of the vaccine.
 
 
-large sample confidence interval 
+
 
 Using the distribution of T detailed above, this is its probability distribution function, where $\pi$ is the probability of each of the 170 covid cases being from the vaccine group:
 
@@ -96,9 +92,10 @@ Since $T$ is binomial, the maximum likelihood estimate of $\pi$ is $\frac{t}{170
 
 ### Second Derivative Test
 
-$$\frac{d^2}{d\psi^2}\ell(\psi)=-\frac{8}{(1-\psi)^2}+\frac{170}{(2-\psi)^2}$$
+$$\frac{d^2}{d\psi^2}\ell(\psi)=-\frac{t}{(1-\psi)^2}+\frac{170}{(2-\psi)^2}$$
 
-```{r label = "r3", eval = T, echo = F}
+```{r label = "functions", eval = T, echo = F}
+# functions
 log_lik <- function(psi){
   log(choose(170,8))+8*log(1-psi)-8*log(2-psi)-162*log(2-psi)
 }
@@ -117,10 +114,11 @@ ggplot() +
 
 The range of $\psi$ is $-\infty <\psi <1$. The second derivative of the log-likelihood function is positive for much of that range and is only negative between 0.723 and 1. This makes it difficult to confirm that 0.9506 is the global maximum likelihood estimate analytically. Instead, we'll look at a graph to confirm the maximum.
 
-```{r label = "r4", eval = T, echo = F}
+```{r label = "loglik graph", eval = T, echo = F}
+# loglik graph
 ggplot() +
   geom_function(fun=log_lik, xlim=c(-1,1)) +
-  geom_vline(aes(xintercept=mle), color='red') +
+  geom_vline(aes(xintercept=0.9506), color='red') +
   theme_bw() +
   labs(title="Log-likelihood Function with t=8") +
   xlab("Psi (Vaccine Efficacy)") +
@@ -128,10 +126,20 @@ ggplot() +
 ```
 Between -1 and 1, the root of the first derivative has its maximum at 0.9506, our MLE. Below 0.9506, the first derivative is always positive, meaning that 0.9506 is the global maximum as well.
 
+### Confidence Intervals
 
-To assess the ease of finding $\widehat{\psi}_0^{mle}$ iteratively, here is the log-likelihood function when $t=8$ next to its second order Taylor series. Because of numerical difficulties, the function is plotted in terms of $\pi$, not $\psi$, but the convergence of the two functions is the same as what it would be in terms of $\psi$.
+A large sample 95% confidence interval was found for $\psi_0$ using the fact that for large samples and under certain regularity conditions, $\widehat{\psi}_0^{mle}$ is approximately normal with mean $\psi_0$ and standard error $\frac{1}{\sqrt{I(\psi_0)}}$. With this approximate distribution, this confidence interval can be constructed:
 
-```{r, label="r5", warning=F, eval = T, echo = F}
+$$\widehat{\psi}_0^{mle}\pm z_{0.025}\widehat{SE}=\widehat{\psi}_0^{mle}\pm z_{0.025}\sqrt{\frac{1}{I(\psi_0)}}$$
+
+$$I(\psi_0)=E\big[-\frac{d^2}{d\psi^2}\ell(\psi)\big]\big|_{\psi=\psi_0}=E[\frac{t}{(1-\psi)^2}-\frac{170}{(2-\psi)^2}]\big|_{\psi=\psi_0}$$
+
+To achieve the expected Fisher information, we used our estimate for $\psi_0$, so $I(\psi_0)\approx \frac{t}{(1-\widehat{\psi}_0^{mle})^2}-\frac{170}{(2-\widehat{\psi}_0^{mle})^2}$.
+
+To assess the ease of finding $\widehat{\psi}_0^{mle}$ numerically, here is the log-likelihood function when $t=8$ next to its second order Taylor series. Because of numerical difficulties, the function is plotted in terms of $\pi$, not $\psi$, but the convergence of the two functions is the same as what it would be in terms of $\psi$.
+
+```{r, label="taylor series", warning=F, eval = T, echo = F}
+# taylor series
 log_lik_pi <- function(pi){
   log(choose(170,8))+8*log(pi)+162*log(1-pi)
 }
@@ -144,19 +152,20 @@ plot(ml) +
   xlab("Pi") 
 ```
 
-Between the two blue lines, the log-likelihood function matches the second order Taylor expansion well. This means that the log-likelihood function is close enough to polynomial that the second order Taylor series is a good function to find the MLE with.
+Between the blue lines, the log-likelihood function matches the second order Taylor expansion well. This means that the log-likelihood function is close enough to quadratic that the second order Taylor series is a good approximation of it. If the second order Taylor series wasn't a good fit for it, there would be risk of an inaccurate estimate.
 
 They diverge farther from the MLE, because the log-likelihood function is not polynomial and it's only the second order Taylor approximation, so the approximation does not last.
 
+We can check the estimate given by Newton-Raphson, $\widehat{\pi}_0^{mle}=0.04706$, by remembering that $\pi$ is the probability parameter of a binomial distribution and finding MLE $\frac{t}{170}=\frac{8}{170}\approx0.04706$, which matches the Newton-Raphson estimate.
 
 ### Bootstrapping
 
-Now, to find a confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE, and 
-These values were generated from the distribution of $T$ with $\pi$ determined by our estimate of the vaccine efficacy, $0.9506$.
+Now, to find a confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE.
+These values were generated from the distribution of $T$ with $\pi$ determined by the MLE of $\pi$ $\frac{t}{170}, then plugged into the formula .
 
 We'll then take the 2.5th and 97.5th percentiles of the generated values to find the middle 95% of the set. Those numbers will be the bounds of the confidence interval for the vaccine efficacy $\psi$.
 
-###Likelihood ratio significance test
+### Likelihood ratio significance test
 
 Then, we'll perform a significance test on the maximum likelihood estimate using the chi square distribution. This is a two-sided significance test, where the alternative hypothesis is that $\psi$ is not 0.3. 
 
@@ -165,20 +174,9 @@ Statistic $W=2\ell(\widehat{\psi}_0^{mle})-2\ell(\psi_{null})$ is approximately 
 
 The p-value is very close to 0. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3.
 
-###Empirical p value
+### Empirical p value
 
-```{r label = "emp p value", eval = T, echo = F} 
-set.seed(414)
 
-unifs <- replicate(n=B, expr={x <- rbinom(n=1, size=170, prob=(0.7/1.7))
-                    mle <- (170-2*x)/(170-x)
-                    W <- 2*log_lik(mle)-2*log_lik(null)
-                    })
-
-pvalue <- sum(unifs>W, na.rm=T)/B
-cat("Proportion Exceeding W:", pvalue)
-
-```
 
 For an empirical p-value, 10,000 values of $T$ are drawn from the distribution associated with the null hypothesis: that the vaccine efficacy was 30%. This meant the trials of $T$ each had a $\frac{1-0.3}{2-0.3}=\frac{7}{17}$ probability of being from the vaccine group.
 
@@ -188,13 +186,14 @@ The empirical p-value is the proportion of $W=2l\ell(\widehat{\psi}^{mle})-2\ell
 
 ## Bayesian Inference
 
-#Results
+# Results
 
-$$154=162\psi$$ $$\widehat{\psi}_0^{mle}=\frac{170-2t}{170-t}=\frac{154}{162}\approx 0.9506$$
+$$\widehat{\psi}_0^{mle}=\frac{170-2t}{170-t}=\frac{154}{162}\approx 0.9506$$
 
-The maximum likelihood estimate for the efficacy of the BNT162b2 vaccine is 0.9506, or 95.06%.
+The maximum likelihood estimate for the efficacy of the BNT162b2 vaccine is 0.9506. This means that we estimate that the vaccine decreases your risk of a covid infection by 95.06%.
 
-```{r label="confidence interval", eval = T, echo = F}
+```{r label="confidence interval", eval = F, echo = F}
+# confidence interval
 data <- data.frame(Group=c("BNT162b2","Placebo","Total"), Cases=c(8,162,170), Sample_size=c(17411,17511,34922))
 
 t <- data[data$Group=="BNT162b2", "Cases"]
@@ -208,9 +207,11 @@ upper <- mle + z * se
 
 cat("[",lower,", ",upper,"]",sep="")
 ```
+
 95% large sample confidence interval around the estimate is [0.9155627, 0.9856719], meaning that there is 95% confidence that the true efficacy is between 91.55% and 98.57%.
 
-```{r label="bootstrapping"}
+```{r label="bootstrapping", eval=F, echo=F}
+# bootstrapping
 set.seed(414)
 
 B <- 10000
@@ -230,8 +231,8 @@ cat("[",lwr,", ",upr,"]",sep="")
 
 The 95% confidence interval using bootstrapping was [0.9102564, 0.9820359], meaning that there is 95% confidence that the true efficacy is between 91.03% and 98.20%.
 
-```{r label="chi p value"}
-# H0: psi is 0.3 . H1: otherwise
+```{r label="chi p value", eval=F, echo=F}
+# chi p value
 null <- 0.3
 W <- 2*log_lik(mle)-2*log_lik(null)
 pchisq(W, df=1, lower.tail=F)
@@ -243,6 +244,20 @@ The empirical p-value was 0, meaning that in 10000 data points generated from th
 
 In both methods for finding a p-value, the null hypothesis was rejected.
 
+```{r label = "emp p value", eval = F, echo = F} 
+# emp p value
+set.seed(414)
+
+unifs <- replicate(n=B, expr={x <- rbinom(n=1, size=170, prob=(0.7/1.7))
+                    mle <- (170-2*x)/(170-x)
+                    W <- 2*log_lik(mle)-2*log_lik(null)
+                    })
+
+pvalue <- sum(unifs>W, na.rm=T)/B
+cat("Proportion Exceeding W:", pvalue)
+
+```
+
 # Discussion & Conclusion
 
 
@@ -252,27 +267,34 @@ Polack et al. (2020). Safety and Efficacy of the BNT162b2 mRNA Covid-19 Vaccine.
 
 Grove, R. (2026). *Physician's Health Study*. Lecture slides, Introduction To Probability And Mathematical Statistics III, University of Washington.
 
+Senn, S. (2022). The design and analysis of vaccine trials for COVID-19 for the purpose of estimating efficacy. *Pharmaceutical Statistics*, 21(4).
 
 
-Smith, A., & Johnson, C. (2023). *Title of the Online Article*.
-Retrieved from <https://www.example.com>.
+# Appendix
 
-#Appendix
-
-#Code
+## Code
 
 ## Likelihood
 
-```{r ref.label = "r2", eval = FALSE}
+```{r ref.label = "functions", eval = FALSE}
 ```
-```{r ref.label = "r3", eval = FALSE}
+```{r ref.label = "loglik graph", eval = FALSE}
 ```
-```{r ref.label = "r4", eval = FALSE}
+```{r ref.label = "taylor series", eval = FALSE}
 ```
-
-
+```{r ref.label = "confidence interval", eval = FALSE}
+```
+```{r ref.label = "bootstrapping", eval = FALSE}
+```
+```{r ref.label = "chi p value", eval = FALSE}
+```
 ```{r ref.label = "emp p value", eval = FALSE}
 ```
+
+
+
+## Proofs
+
 
 ### Derivation of log-likelihood function in terms of pi
 $$f(t)={170 \choose t}\pi^t(1-\pi)^{170-t}, \ \ \ t=0,1,...,170$$
@@ -280,18 +302,6 @@ $$f(t)={170 \choose t}\pi^t(1-\pi)^{170-t}, \ \ \ t=0,1,...,170$$
 $$L(\pi)={170 \choose 8}\pi^8(1-\pi)^{162}$$
 
 $$\ell(\pi)=ln{170 \choose 8}+8ln\pi+162ln(1-\pi)$$
-
-```{r ref.label = "r5", eval = FALSE}
-```
-
-
-
-
-
-
-
-##Proofs
-
 
 
 
