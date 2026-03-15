@@ -66,21 +66,8 @@ Describe the statistical model used.
 We are interested in $\psi$, the efficacy of the vaccine.
 
 
+large sample confidence interval 
 
-```{r label="r2", eval = T, echo = F}
-data <- data.frame(Group=c("BNT162b2","Placebo","Total"), Cases=c(8,162,170), Sample_size=c(17411,17511,34922))
-
-t <- data[data$Group=="BNT162b2", "Cases"]
-n <- data[data$Group=="Total", "Cases"]
-mle <- (n-2*t)/(n-t)
-se <- 1/sqrt(8/((1-mle)^2)-170/((2-mle)^2))
-z <- qnorm(0.975)
-
-lower <- mle - z * se
-upper <- mle + z * se
-
-cat("[",lower,", ",upper,"]",sep="")
-```
 Using the distribution of T detailed above, this is its probability distribution function, where $\pi$ is the probability of each of the 170 covid cases being from the vaccine group:
 
 $$f(t)={170 \choose t}\pi^t(1-\pi)^{170-t}, \ \ \ t=0,1,...,170$$
@@ -162,7 +149,6 @@ Between the two blue lines, the log-likelihood function matches the second order
 They diverge farther from the MLE, because the log-likelihood function is not polynomial and it's only the second order Taylor approximation, so the approximation does not last.
 
 
-
 ### Bootstrapping
 
 Now, to find a confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE, and 
@@ -170,7 +156,61 @@ These values were generated from the distribution of $T$ with $\pi$ determined b
 
 We'll then take the 2.5th and 97.5th percentiles of the generated values to find the middle 95% of the set. Those numbers will be the bounds of the confidence interval for the vaccine efficacy $\psi$.
 
-```{r}
+###Likelihood ratio significance test
+
+Then, we'll perform a significance test on the maximum likelihood estimate using the chi square distribution. This is a two-sided significance test, where the alternative hypothesis is that $\psi$ is not 0.3. 
+
+Statistic $W=2\ell(\widehat{\psi}_0^{mle})-2\ell(\psi_{null})$ is approximately a chi square variable with 1 degree of freedom, so the chi square distribution is used to find a p-value for the data.
+
+
+The p-value is very close to 0. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3.
+
+###Empirical p value
+
+```{r label = "emp p value", eval = T, echo = F} 
+set.seed(414)
+
+unifs <- replicate(n=B, expr={x <- rbinom(n=1, size=170, prob=(0.7/1.7))
+                    mle <- (170-2*x)/(170-x)
+                    W <- 2*log_lik(mle)-2*log_lik(null)
+                    })
+
+pvalue <- sum(unifs>W, na.rm=T)/B
+cat("Proportion Exceeding W:", pvalue)
+
+```
+
+For an empirical p-value, 10,000 values of $T$ are drawn from the distribution associated with the null hypothesis: that the vaccine efficacy was 30%. This meant the trials of $T$ each had a $\frac{1-0.3}{2-0.3}=\frac{7}{17}$ probability of being from the vaccine group.
+
+The empirical p-value is the proportion of $W=2l\ell(\widehat{\psi}^{mle})-2\ell(0.3)$ (where $\widehat{\psi}^{mle}$ is the MLE based on the null-generated data) that exceed the value of $W$ where $\widehat{\psi}^{mle}$ is the MLE based on the study observations. 
+
+
+
+## Bayesian Inference
+
+#Results
+
+$$154=162\psi$$ $$\widehat{\psi}_0^{mle}=\frac{170-2t}{170-t}=\frac{154}{162}\approx 0.9506$$
+
+The maximum likelihood estimate for the efficacy of the BNT162b2 vaccine is 0.9506, or 95.06%.
+
+```{r label="confidence interval", eval = T, echo = F}
+data <- data.frame(Group=c("BNT162b2","Placebo","Total"), Cases=c(8,162,170), Sample_size=c(17411,17511,34922))
+
+t <- data[data$Group=="BNT162b2", "Cases"]
+n <- data[data$Group=="Total", "Cases"]
+mle <- (n-2*t)/(n-t)
+se <- 1/sqrt(8/((1-mle)^2)-170/((2-mle)^2))
+z <- qnorm(0.975)
+
+lower <- mle - z * se
+upper <- mle + z * se
+
+cat("[",lower,", ",upper,"]",sep="")
+```
+95% large sample confidence interval around the estimate is [0.9155627, 0.9856719], meaning that there is 95% confidence that the true efficacy is between 91.55% and 98.57%.
+
+```{r label="bootstrapping"}
 set.seed(414)
 
 B <- 10000
@@ -188,49 +228,20 @@ upr <- quantile(boot_df$est, 0.975)
 cat("[",lwr,", ",upr,"]",sep="")
 ```
 
-###Likelihood ratio significance test
+The 95% confidence interval using bootstrapping was [0.9102564, 0.9820359], meaning that there is 95% confidence that the true efficacy is between 91.03% and 98.20%.
 
-Now, we'll perform a significance test on the maximum likelihood estimate using the chi square distribution. This is a two-sided significance test, where the alternative hypothesis is that $\psi$ is not 0.3. 
-
-```{r}
+```{r label="chi p value"}
 # H0: psi is 0.3 . H1: otherwise
 null <- 0.3
 W <- 2*log_lik(mle)-2*log_lik(null)
 pchisq(W, df=1, lower.tail=F)
 ```
-The p-value is very close to 0. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3.
 
-###Empirical p value
+The chi square derived p-value was 2.82e-28, which is extremely small. This means we reject 
 
-```{r} 
-set.seed(414)
-
-unifs <- replicate(n=B, expr={x <- rbinom(n=1, size=170, prob=(0.7/1.7))
-                    mle <- (170-2*x)/(170-x)
-                    W <- 2*log_lik(mle)-2*log_lik(null)
-                    })
-
-pvalue <- sum(unifs>W, na.rm=T)/B
-cat("Proportion Exceeding W:", pvalue)
-
-```
-
-For an empirical p-value, 10,000 values of $T$ were drawn from the distribution associated with the null hypothesis: that the vaccine efficacy was 30%. This meant the trials of $T$ each had a $\frac{1-0.3}{2-0.3}=\frac{7}{17}$ probability of being from the vaccine group.
-
-
-When calculating the estimate based on a 10,000 values from the null distribution- binomial with size 170 and probability $\frac{0.7}{1.7}$. This distribution is chosen because it reflects the null hypothesis that the vaccine efficacy is $0.3$. 
-
-The empirical p-value was 0. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3. 
+The empirical p-value was 0, meaning that in 10000 data points generated from the distribution with a vaccine efficacy of 0.3, none were more extreme than the study data. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3. It is very strong evidence of a different vaccine efficacy.
 
 In both methods for finding a p-value, the null hypothesis was rejected.
-
-## Bayesian Inference
-
-#Results
-
-$$154=162\psi$$ $$\widehat{\psi}_0^{mle}=\frac{170-2t}{170-t}=\frac{154}{162}\approx 0.9506$$
-
-The maximum likelihood estimate for the efficacy of the BNT162b2 vaccine is 0.9506, or 95.06%.
 
 # Discussion & Conclusion
 
@@ -252,13 +263,15 @@ Retrieved from <https://www.example.com>.
 
 ## Likelihood
 
-```{r ref.label = "r1", eval = FALSE}
-```
 ```{r ref.label = "r2", eval = FALSE}
 ```
 ```{r ref.label = "r3", eval = FALSE}
 ```
 ```{r ref.label = "r4", eval = FALSE}
+```
+
+
+```{r ref.label = "emp p value", eval = FALSE}
 ```
 
 ### Derivation of log-likelihood function in terms of pi
@@ -271,26 +284,9 @@ $$\ell(\pi)=ln{170 \choose 8}+8ln\pi+162ln(1-\pi)$$
 ```{r ref.label = "r5", eval = FALSE}
 ```
 
-##Something fun
-
-```{r, warning=F}
-v <- c()
-for(x in 1:99){
-v <- c(v,maxLik2(loglik=log_lik_pi, start=(x/100))$iterations)
-}
 
 
-plot(x=1:99/100, y=v,
-     main="Number of iterations needed in Newton Raphson depending on start value",
-     xlab="Start value (Pi)",
-     ylab="Number of iterations",
-     ylim=c(0,12)) 
-abline(v=0.04705882, col='blue')
-  
-```
 
-
-The log-likelihood function in question is the log-likelihood of $\pi$. NaNs are produced during many of the Newton Raphson iterations, probably from trying to calculate the natural log of a negative number, but all 99 values converge to the same estimate, so there must be a recovery process after encountering an NaN.
 
 
 
