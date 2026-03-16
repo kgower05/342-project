@@ -155,7 +155,7 @@ Close to the MLE, the log-likelihood function matches the second order Taylor ex
 They diverge farther from the MLE, because the log-likelihood function is not polynomial and it's only the second order Taylor approximation, so the approximation does not last.
 
 ### Bootstrapping
-To find another confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE. These values were generated from the distribution of $T$ with $\pi$ determined by the MLE of $\pi$ $\frac{t}{170}$, then plugged into the formula for $\widehat{\psi}_0^{mle}$.
+To find another confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE. These values were generated from the distribution of $T$ with $\pi$ determined by the MLE of $\pi$ $\frac{t}{170}$, then plugged into the formula for $\widehat{\psi}_0^{mle}$. (Grove, 2025)
 
 We'll then take the 2.5th and 97.5th percentiles of the generated estimates to find the middle 95% of the set. Those numbers will be the bounds of the confidence interval for the vaccine efficacy $\psi$.
 
@@ -189,7 +189,7 @@ $$P(\psi = \frac{1 - 2\pi}{1 - \pi} \geq 0) = 0.5$$
 $$P(\pi \leq \frac{1}{2}) = 0.5$$
 This means that the $Beta(a,b)$ prior for $\pi$ has a median of 0.5 and 1st percentile of $\frac{7}{17}$. These quantiles can be plugged into R using beta.select() to select the shape of the distribution.
 
-```{r label = beta_dist, eval=TRUE, echo=FALSE}
+```{r label = beta_dist, eval=F, echo=FALSE}
 # Selecting beta quantiles
 beta.select(quantile1 = list(p = 0.01, x = 7/17),
             quantile2 = list(p = 0.5, x = 0.5))
@@ -215,12 +215,14 @@ ggplot() +
     x = expression(pi),
     y = "PDF") + theme_bw()
 ```
+
 **Posterior Distribution**
 
 The posterior distribution can be determined with its shape parameters being a + t and b + n - t, where t is the observed value for T. In this case, a = 85.63, b = 85.63, n = 170, and t = 8. So:
 $$\pi|t \sim Beta(85.63 + t, 85.63 + 170 - t)$$
 
 **Inference**
+
 The median and interval of $\psi$, vaccine efficacy, can be found in relation to the posterior distribution of $\pi$.
 $$P(\frac{1 - \psi}{2 - \psi} < m|t) = 0.5$$
 This equation can be solved for $\psi$ for the median and for the interval values by using corresponding quantile values.
@@ -273,6 +275,7 @@ ggplot() +
   xlab("Psi (Vaccine Efficacy)") +
   ylab("Log-likelihood")
 ```
+
 Between -1 and 1, the root of the first derivative has its maximum at 0.9506, our MLE. Below 0.9506, the first derivative is always positive, meaning that 0.9506 is the global maximum as well.
 
 ```{r label="confidence interval", eval = F, echo = F}
@@ -369,7 +372,7 @@ ggplot() +
 
 The posterior median of $\pi$ was calculated to be 0.2739. For $\pi$, the 95% posterior interval is (0.2274, 0.3227). For $\psi$, the corresponding median value is 0.6228. Using the $\pi$ interval values to solve the 2.5th and 97.5th percentiles of $\psi$, the 95% posterior interval for $\psi$ is (0.5233, 0.7040), meaning that there is 95% probability that the parameter $\psi$ representing vaccine efficacy falls within this range. 
 
-Under the posterior distribution, the probability of vaccine efficacy being less than or equal to 30% was found to be $5.8020 \cdot 10^-08$, meaning that the null hypothesis is rejected.
+Under the posterior distribution, the probability of vaccine efficacy being less than or equal to 30% was found to be $5.8020 \cdot 10^{-08}$, meaning that the null hypothesis is rejected.
 
 # Discussion & Conclusion
 
@@ -385,7 +388,8 @@ Polack et al. (2020). Safety and Efficacy of the BNT162b2 mRNA Covid-19 Vaccine.
 
 Grove, R. (2026). *Physician's Health Study*. Lecture slides, Introduction To Probability And Mathematical Statistics III, University of Washington.
 
-Senn, S. (2022). The design and analysis of vaccine trials for COVID-19 for the purpose of estimating efficacy. *Pharmaceutical Statistics*, 21(4).
+Grove, R. (2025). *The Bootstrap*. Lecture slides, Introduction To Probability And Mathematical Statistics II, University of Washington.
+
 
 
 # Appendix
