@@ -55,11 +55,11 @@ A double blind placebo-controlled study was done by Pfizer and BioNTech to asses
 Effective vaccines were sorely needed when COVID-19 infected tens of millions of people after the virus started a pandemic in early 2020. By late 2020, Pfizer and BioNTech were ready to distribute their two dose vaccine for COVID-19. 
 To obtain authorization for emergency use of the vaccine, a double blind study concerning vaccine safety, immunogenicity, and efficacy was conducted. This paper will focus on efficacy.
 
-The study involved two similar sized groups (17411 in the vaccine group, 17511 in the placebo group) of people aged 16 and up, of stable health and no history of covid infection. The participants were given the BNT162b2 vaccine or a saline placebo depending on what group they were randomly placed in. Each participant received two doses, 21 days apart. Starting 7 days after the second dose, they were monitored for being COVID-positive until a predetermined number of 170 positive tests came up. Of these 170 cases, 8 of them were in people who received the vaccine. (Polack et al., 2020)
+The study involved two similar sized groups (17411 in the vaccine group, 17511 in the placebo group) of people aged 16 and up with stable health and no history of covid infection. The participants were given 2 doses, 21 days apart, of the BNT162b2 vaccine or a saline placebo depending on what group they were randomly placed in. Starting 7 days after the second dose, they were monitored for being COVID-positive until a predetermined number of 170 positive tests came up. Of these 170 cases, 8 were in the vaccine group. (Polack et al., 2020)
 
-The analysis done by Polack et al. uses a Bayesian beta-binomial model with a prior distribution centered around an efficacy of 0.3, which matches the FDA standard of vaccine efficacy being 30% or higher.
+The analysis done by Polack et al. used a Bayesian beta-binomial model with a prior distribution centered around an efficacy of 0.3, which matches the FDA standard of vaccine efficacy being 30% or higher.
 
-The null hypothesis we are concerned with is that the efficacy of the BNT162b2 vaccine is 0.3, meaning that someone who receives the vaccine is 30% less likely to become COVID-positive than somebody who did not receive the vaccine. The goal of this paper is to use both Frequentist and Bayesian methods to assess this hypothesis and perform inference on the true efficacy of the vaccine.
+The null hypothesis we are concerned with is that the efficacy of the BNT162b2 vaccine is 0.3, meaning that someone who receives the vaccine is 30% less likely to become COVID-positive than somebody who did not receive the vaccine. The goal of this paper is to use both Frequentist and Bayesian methods to assess this hypothesis and perform inference on the true efficacy.
 
 Table 1 displays the infection numbers for each group.
 
@@ -241,7 +241,7 @@ ggplot() +
   labs(
     title = "Plot of Prior PDFS",
     x = expression(pi),
-    y = "PDF")
+    y = "PDF") + theme_bw()
 ```
 **Posterior Distribution**
 
@@ -392,8 +392,7 @@ ggplot() +
   labs(
     title = "Plot of Prior and Posterior PDFS",
     x = expression(pi),
-    y = "PDF"
-  )
+    y = "PDF") + theme_bw()
 ```
 
 The posterior median of $\pi$ was calculated to be 0.2739. For $\pi$, the 95% posterior interval is (0.2274, 0.3227). For $\psi$, the corresponding median value is 0.6228. Using the $\pi$ interval values to solve the 2.5th and 97.5th percentiles of $\psi$, the 95% posterior interval for $\psi$ is (0.5233, 0.7040), meaning that there is 95% probability that the parameter $\psi$ representing vaccine efficacy falls within this range. 
@@ -421,9 +420,7 @@ Senn, S. (2022). The design and analysis of vaccine trials for COVID-19 for the 
 
 ## Code
 
-## Likelihood
-
-### Second Derivative
+### Second derivative of log-likelihood
 ```{r}
 ggplot() +
   geom_function(fun=second_deriv, xlim=c(-100,1)) +
