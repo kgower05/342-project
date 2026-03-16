@@ -85,8 +85,7 @@ kable(summary_table, caption = "Estimated Risk and Vaccine Efficacy", digits = 6
 cases <- data.frame( Group = c("BNT162b2", "Placebo"), Cases = c(8, 162) )
 ```
 
-
-```{r}
+```{r]}
 ggplot(cases, aes(x = "Cases", y = Cases, fill = Group)) + geom_bar(stat = "identity") + labs(x = "", y = "Number of Cases", title= "COVID-19 Cases by Treatment Group") + theme_bw()
 ```
 
@@ -109,6 +108,9 @@ $$T \approx Binom(n=170, \pi)$$
 ## Likelihood Inference
 
 We are interested in $\psi$, the efficacy of the vaccine.
+
+
+
 
 Using the distribution of T detailed above, this is its probability distribution function, where $\pi$ is the probability of each of the 170 covid cases being from the vaccine group:
 
@@ -154,7 +156,9 @@ To assess the ease of finding $\widehat{\psi}_0^{mle}$ numerically, here is the 
 log_lik_pi <- function(pi){
   log(choose(170,8))+8*log(pi)+162*log(1-pi)
 }
+
 ml <- maxLik2(loglik=log_lik_pi, start=0.5)
+
 plot(ml) + 
   theme_bw() +
   labs(title="Log-likelihood when t = 8") +
@@ -234,8 +238,10 @@ ggplot() +
                 mapping = aes(color = "Prior"),
                 args = list(shape1 = 85.63, shape2 = 85.63),
                 xlim = c(0, 1)) +
-  labs(title = "Plot of Prior PDFS",
-    x = expression(pi), y = "PDF")
+  labs(
+    title = "Plot of Prior PDFS",
+    x = expression(pi),
+    y = "PDF")
 ```
 **Posterior Distribution**
 
@@ -243,7 +249,6 @@ The posterior distribution can be determined with its shape parameters being a +
 $$\pi|t \sim Beta(85.63 + t, 85.63 + 170 - t)$$
 
 **Inference**
-
 The median and interval of $\psi$, vaccine efficacy, can be found in relation to the posterior distribution of $\pi$.
 $$P(\frac{1 - \psi}{2 - \psi} < m|t) = 0.5$$
 This equation can be solved for $\psi$ for the median and for the interval values by using corresponding quantile values.
@@ -278,6 +283,7 @@ $$\frac{d^2}{d\psi^2}\ell(\psi)=-\frac{t}{(1-\psi)^2}+\frac{170}{(2-\psi)^2}$$
 log_lik <- function(psi){
   log(choose(170,8))+8*log(1-psi)-8*log(2-psi)-162*log(2-psi)
 }
+
 second_deriv <- function(psi){
   -8/((1-psi)^2) + 170/((2-psi)^2)
 }
@@ -324,7 +330,8 @@ sample_size <- 15
 pi <- (1-mle)/(2-mle)
 
 boot_df <- as.data.frame(replicate(n=B, expr={x <- rbinom(n=1,size=170, prob=pi)
-                     (170 - 2*x)/(170-x)}))
+                     (170 - 2*x)/(170-x)
+                    }))
 names(boot_df) <- c("est")
 
 lwr <- quantile(boot_df$est, 0.025)
@@ -353,16 +360,18 @@ In both methods for finding a p-value, the null hypothesis was rejected. There i
 ```{r label = "emp p value", eval = F, echo = F} 
 # emp p value
 set.seed(414)
+
 unifs <- replicate(n=B, expr={x <- rbinom(n=1, size=170, prob=(0.7/1.7))
                     mle <- (170-2*x)/(170-x)
-                    W <- 2*log_lik(mle)-2*log_lik(null)})
+                    W <- 2*log_lik(mle)-2*log_lik(null)
+                    })
 
 pvalue <- sum(unifs>W, na.rm=T)/B
 cat("Proportion Exceeding W:", pvalue)
+
 ```
 
-
-## Bayesian Inference 
+### Bayesian Inference
 Using Bayesian inference, the posterior distribution is:
 $$\pi|t \sim Beta(93.63, 247.63)$$
 ```{r label = prior_posterior, eval = TRUE, echo=FALSE}
@@ -380,9 +389,11 @@ ggplot() +
                 mapping = aes(color = "Posterior"),
                 args = list(shape1 = 93.63, 247.63),
                 xlim = c(0, 1)) +
-  labs(title = "Plot of Prior and Posterior PDFS",
+  labs(
+    title = "Plot of Prior and Posterior PDFS",
     x = expression(pi),
-    y = "PDF")
+    y = "PDF"
+  )
 ```
 
 The posterior median of $\pi$ was calculated to be 0.2739. For $\pi$, the 95% posterior interval is (0.2274, 0.3227). For $\psi$, the corresponding median value is 0.6228. Using the $\pi$ interval values to solve the 2.5th and 97.5th percentiles of $\psi$, the 95% posterior interval for $\psi$ is (0.5233, 0.7040), meaning that there is 95% probability that the parameter $\psi$ representing vaccine efficacy falls within this range. 
@@ -391,6 +402,11 @@ Under the posterior distribution, the probability of vaccine efficacy being less
 
 # Discussion & Conclusion
 
+Using both Frequentist and Bayesian methods, it is determined that vaccine efficacy at preventing COVID infections is above 30%, meaning that the null hypothesis is rejected. The Frequentist method found the MLE estimate for efficacy of 95.06%. The Bayesian method found a median efficacy of 62.28%. All methods found statistically significant results, with a p-value of 2.82e-28 for the chi squared value, 0 for the empirical p-value, and 5.8020e-08 for the Bayesian posterior probability, in that the vaccine efficacy is less than 30%. 
+
+The Pfizer and BioNTech study using a $\pi \sim Beta(0.700102, 1)$ prior found a 95% vaccine efficacy estimate with a posterior probability above 0.99999 that the vaccine efficacy is above 30%. The vaccine efficacy value is similar to the Frequentist value we calculated, but it is 32.72% higher than the Bayesian value. This is due to the pessimistic prior that we chose, however, since that prior was chosen without results in mind, we determined it is preferred to be more pessimistic rather than claim higher vaccine efficacy than is true.
+
+In the end, the Pfizer and BioNTech vaccine is effective at preventing COVID infection at a rate higher than 30% and the vaccine approval was key to tackle the COVID-19 pandemic beginning in 2020.
 
 # Bibliography
 
@@ -409,8 +425,10 @@ Senn, S. (2022). The design and analysis of vaccine trials for COVID-19 for the 
 
 ### Second Derivative
 ```{r}
-ggplot() + geom_function(fun=second_deriv, xlim=c(-100,1)) +
-  theme_bw() + labs(title="Second Derivative of the Log-likelihood Function") +
+ggplot() +
+  geom_function(fun=second_deriv, xlim=c(-100,1)) +
+  theme_bw() +
+  labs(title="Second Derivative of the Log-likelihood Function") +
   xlab("Psi (Vaccine Efficacy)") +
   ylab("Likelihood")
 ```
