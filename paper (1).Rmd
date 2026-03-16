@@ -85,7 +85,7 @@ kable(summary_table, caption = "Estimated Risk and Vaccine Efficacy", digits = 6
 cases <- data.frame( Group = c("BNT162b2", "Placebo"), Cases = c(8, 162) )
 ```
 
-```{r]}
+```{r label="barplot", fig.height = 3, fig.width = 5, eval=T, echo=F}
 ggplot(cases, aes(x = "Cases", y = Cases, fill = Group)) + geom_bar(stat = "identity") + labs(x = "", y = "Number of Cases", title= "COVID-19 Cases by Treatment Group") + theme_bw()
 ```
 
@@ -107,34 +107,22 @@ $$T \approx Binom(n=170, \pi)$$
 
 ## Likelihood Inference
 
-We are interested in $\psi$, the efficacy of the vaccine.
-
-
-
-
 Using the distribution of T detailed above, this is its probability distribution function, where $\pi$ is the probability of each of the 170 covid cases being from the vaccine group:
 
 $$f(t)={170 \choose t}\pi^t(1-\pi)^{170-t}, \ \ \ t=0,1,...,170$$
 
-Using the proof in the appendix, we can write $\pi$ in terms of vaccine efficacy $\psi$. $\pi=\frac{1-\psi}{2-\psi}$.
+Using the proof in the appendix, we can write $f(t)$ in terms of vaccine efficacy $\psi$. $\pi=\frac{1-\psi}{2-\psi}$.
 
 $$f(t)={170 \choose t}(\frac{1-\psi}{2-\psi})^{t}(\frac{1}{2-\psi})^{170-t}, \ \ \ t=0,1,...,170$$
 
-The generalized likelihood function of $\psi$ is the following:
+The general likelihood function of $\psi$ is the following:
 $$L(\psi)={170 \choose t}(\frac{1-\psi}{2-\psi})^t(\frac{1}{2-\psi})^{170-t}$$
-
 Now, the log-likelihood function:
 $$\ell(\psi)=ln{170 \choose t}+tln(1-\psi)-170ln(2-\psi)+(170-t)ln1$$
-
-$\widehat{\psi}_0^{mle}$ will be the value of $\psi$ such that the first derivative of the log-likelihood function is 0, and where the second derivative is analyzed to confirm that it is the global maximum.
-
+$\widehat{\psi}_0^{mle}$ will be the value of $\psi$ such that the first derivative of the log-likelihood function is 0.
 $$\frac{d}{d\psi}\ell(\psi)=-\frac{t}{1-\psi}+\frac{170}{2-\psi}=0$$
-
-
-
 $$\frac{170}{2-\psi}=\frac{t}{1-\psi}$$
 $$170-170\psi=2t-t\psi$$
-
 $$154=162\psi$$ $$\widehat{\psi}_0^{mle}=\frac{170-2t}{170-t}$$
 Since $T$ is binomial, the maximum likelihood estimate of $\pi$ is $\frac{t}{170}$. MLEs are invariant to transformation, so since $\psi=\frac{1-2\pi}{1-\pi}$, $\widehat{\psi}_0^{mle}=\frac{1-2\frac{t}{170}}{1-\frac{t}{170}}=\frac{170-2t}{170-t}$ (Grove, 2026), which is the same result as received with maximizing the likelihood function.
 
@@ -142,16 +130,13 @@ Since $T$ is binomial, the maximum likelihood estimate of $\pi$ is $\frac{t}{170
 ### Confidence Intervals
 
 A large sample 95% confidence interval was found for $\psi_0$ using the fact that for large samples and under certain regularity conditions, $\widehat{\psi}_0^{mle}$ is approximately normal with mean $\psi_0$ and standard error $\frac{1}{\sqrt{I(\psi_0)}}$. With this approximate distribution, this confidence interval can be constructed:
-
 $$\widehat{\psi}_0^{mle}\pm z_{0.025}\widehat{SE}=\widehat{\psi}_0^{mle}\pm z_{0.025}\sqrt{\frac{1}{I(\psi_0)}}$$
-
 $$I(\psi_0)=E\big[-\frac{d^2}{d\psi^2}\ell(\psi)\big]\big|_{\psi=\psi_0}=E[\frac{t}{(1-\psi)^2}-\frac{170}{(2-\psi)^2}]\big|_{\psi=\psi_0}$$
-
 To achieve the expected Fisher information, we used our estimate for $\psi_0$, so $I(\psi_0)\approx \frac{t}{(1-\widehat{\psi}_0^{mle})^2}-\frac{170}{(2-\widehat{\psi}_0^{mle})^2}$.
 
-To assess the ease of finding $\widehat{\psi}_0^{mle}$ numerically, here is the log-likelihood function when $t=8$ next to its second order Taylor series. Because of numerical difficulties, the function is plotted in terms of $\pi$, not $\psi$, but the convergence of the two functions is the same as what it would be in terms of $\psi$.
+To assess whether it's suitable to approximate $\widehat{\psi}_0^{mle}$ with the Normal distribution, here is the log-likelihood function when $t=8$ next to its second order Taylor series. Because of numerical difficulties, the function is plotted in terms of $\pi$, not $\psi$, but the convergence of the two functions is the same as what it would be in terms of $\psi$.
 
-```{r, label="taylor series", warning=F, eval = T, echo = F}
+```{r, label="taylor series", warning=F, eval = T, echo = F, fig.height = 3, fig.width = 5}
 # taylor series
 log_lik_pi <- function(pi){
   log(choose(170,8))+8*log(pi)+162*log(1-pi)
@@ -165,37 +150,24 @@ plot(ml) +
   xlab("Pi") 
 ```
 
-Between the blue lines, the log-likelihood function matches the second order Taylor expansion well. This means that the log-likelihood function is close enough to quadratic that the second order Taylor series is a good approximation of it. If the second order Taylor series wasn't a good fit for it, there would be risk of an inaccurate estimate.
+Close to the MLE, the log-likelihood function matches the second order Taylor expansion well. This means that the log-likelihood function is close enough to quadratic that the Normal distribution is a good approximation of the maximum likelihood estimator.
 
 They diverge farther from the MLE, because the log-likelihood function is not polynomial and it's only the second order Taylor approximation, so the approximation does not last.
 
-We can check the estimate given by Newton-Raphson, $\widehat{\pi}_0^{mle}=0.04706$, by remembering that $\pi$ is the probability parameter of a binomial distribution and finding MLE $\frac{t}{170}=\frac{8}{170}\approx0.04706$, which matches the Newton-Raphson estimate.
-
 ### Bootstrapping
-
-To find a confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE.
-These values were generated from the distribution of $T$ with $\pi$ determined by the MLE of $\pi$ $\frac{t}{170}$, then plugged into the formula for $\widehat{\psi}_0^{mle}$.
+To find another confidence interval for the estimate, we'll take 10000 bootstrapped estimates of the MLE. These values were generated from the distribution of $T$ with $\pi$ determined by the MLE of $\pi$ $\frac{t}{170}$, then plugged into the formula for $\widehat{\psi}_0^{mle}$.
 
 We'll then take the 2.5th and 97.5th percentiles of the generated estimates to find the middle 95% of the set. Those numbers will be the bounds of the confidence interval for the vaccine efficacy $\psi$.
 
 ### Likelihood Ratio Significance Test
-
 Then, we'll perform a significance test on the maximum likelihood estimate using the chi square distribution. This is a two-sided significance test, where the alternative hypothesis is that $\psi$ is not 0.3. 
 
 Statistic $W=2\ell(\widehat{\psi}_0^{mle})-2\ell(\psi_{null})$ is approximately a chi square variable with 1 degree of freedom, so the chi square distribution is used to find a p-value for the data.
 
-
-The p-value is very close to 0. By this value, we reject the null hypothesis in favor of the vaccine efficacy not being 0.3.
-
 ### Empirical P-value
-
-
-
 For an empirical p-value, 10,000 values of $T$ are drawn from the distribution associated with the null hypothesis: that the vaccine efficacy was 30%. This meant the trials of $T$ each had a $\frac{1-0.3}{2-0.3}=\frac{7}{17}$ probability of being from the vaccine group.
 
 The empirical p-value is the proportion of $W=2l\ell(\widehat{\psi}^{mle})-2\ell(0.3)$ (where $\widehat{\psi}^{mle}$ is the MLE based on the null-generated data) that exceed the value of $W$ where $\widehat{\psi}^{mle}$ is the MLE based on the study observations. 
-
-
 
 ## Bayesian Inference
 
@@ -227,7 +199,7 @@ The prior distribution for $\pi$ is:
 $$\pi \sim Beta(85.63, 85.63)$$
 The distribution is shown below, along with what the uniform prior looks like:
 
-```{r label = prior_graph, eval = TRUE, echo=FALSE}
+```{r label = prior_graph, eval = TRUE, echo=FALSE, fig.height = 3, fig.width = 5}
 # Plot of prior distribution
 ggplot() +
   geom_function(fun = dbeta,
@@ -291,7 +263,7 @@ second_deriv <- function(psi){
 
 Instead, we'll look at a graph to observe the maximum. The red line below is at the estimate.
 
-```{r label = "loglik graph", eval = T, echo = F}
+```{r label = "loglik graph", eval = T, echo = F, fig.height = 3, fig.width = 5}
 # loglik graph
 ggplot() +
   geom_function(fun=log_lik, xlim=c(-1,1)) +
@@ -374,7 +346,7 @@ cat("Proportion Exceeding W:", pvalue)
 ### Bayesian Inference
 Using Bayesian inference, the posterior distribution is:
 $$\pi|t \sim Beta(93.63, 247.63)$$
-```{r label = prior_posterior, eval = TRUE, echo=FALSE}
+```{r label = prior_posterior, eval = TRUE, echo=FALSE, fig.height = 3, fig.width = 5}
 # Plot of prior and posterior
 ggplot() +
   geom_function(fun = dbeta,
@@ -421,7 +393,7 @@ Senn, S. (2022). The design and analysis of vaccine trials for COVID-19 for the 
 ## Code
 
 ### Second derivative of log-likelihood
-```{r}
+```{r, fig.height = 3, fig.width = 5}
 ggplot() +
   geom_function(fun=second_deriv, xlim=c(-100,1)) +
   theme_bw() +
@@ -433,6 +405,8 @@ ggplot() +
 ```{r ref.label = "intro", eval = FALSE}
 ```
 ```{r ref.label = "intro2", eval = FALSE}
+```
+```{r ref.label = "barplot", eval = FALSE}
 ```
 ```{r ref.label = "functions", eval = FALSE}
 ```
