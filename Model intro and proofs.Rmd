@@ -23,13 +23,7 @@ Write your abstract here.
 \newpage
 
 # Introduction / Background
-In December 2020, Pfizer and BioNTech began distributing their two dose vaccine for COVID-19. 
-
-The data comes from blah blah blah
-
-make a segmented barplot and table of data (side by side)
-
-From the initial data we have these statistics. 
+ 
 
 ```{r intro, eval=TRUE, echo=FALSE}
 library(knitr)
@@ -68,26 +62,68 @@ $$T \approx Binom(n=170, \pi)$$
 
 
 ## Likelihood Inference
-Detail the likelihood approach.
 
 ## Bayesian Inference
-Detail the Bayesian approach.
 
 # Results
-Present your findings. 
 
-# Discussion / Conclusion
-Discuss / conclude here.
+```{r label="confidence interval", eval = F, echo = F}
+# confidence interval
+data <- data.frame(Group=c("BNT162b2","Placebo","Total"), Cases=c(8,162,170), Sample_size=c(17411,17511,34922))
+
+t <- data[data$Group=="BNT162b2", "Cases"]
+n <- data[data$Group=="Total", "Cases"]
+mle <- (n-2*t)/(n-t)
+se <- 1/sqrt(8/((1-mle)^2)-170/((2-mle)^2))
+z <- qnorm(0.975)
+
+lower <- mle - z * se
+upper <- mle + z * se
+
+cat("[",lower,", ",upper,"]",sep="")
+
+
+```
+
+```{r label="bootstrapping", eval=F, echo=F}
+# bootstrapping
+set.seed(414)
+
+B <- 10000
+sample_size <- 15
+pi <- (1-mle)/(2-mle)
+
+boot_df <- as.data.frame(replicate(n=B, expr={x <- rbinom(n=1,size=170, prob=pi)
+                     (170 - 2*x)/(170-x)
+                    }))
+names(boot_df) <- c("est")
+
+lwr <- quantile(boot_df$est, 0.025)
+upr <- quantile(boot_df$est, 0.975)
+
+cat("[",lwr,", ",upr,"]",sep="")
+
+# histogram
+hist(boot_df$est,
+     breaks = 40,
+     main = "Bootstrap Distribution of ψ",
+     xlab = expression(hat(psi)))
+
+abline(v = lwr, col = "red", lwd = 2, lty = 2)
+abline(v = upr, col = "red", lwd = 2, lty = 2)
+
+legend("topright",
+       legend = c("95% CI"),
+       lty = 2,
+       lwd = 2,
+       col = "red")
+```
+
+
+
+# Discussion & Conclusion
 
 # Bibliography
-
-Brown, B. (2024). *Lecture Title*. Lecture slides, Course Name, University Name.
-
-Doe, J. (2020). Title of the Paper. *Journal Name*, 12(3), 45-67.
-
-Last, F., & Last, F. (2025). *Book Title*. Publisher.
-
-Smith, A., & Johnson, C. (2023). *Title of the Online Article*. Retrieved from https://www.example.com.
 
 # Appendix
 
@@ -97,7 +133,7 @@ Smith, A., & Johnson, C. (2023). *Title of the Online Article*. Retrieved from h
 
 ## Proofs
 
-#### Proof that $T \approx Binom$: 
+### Proof that $T \approx Binom$: 
 
 We start with our two independent binomial models $X \backsim Binom(n_v,\pi_v)$ and $Y\backsim Binom(n_p, \pi_p)$. Here, X is the number of COVID-19 cases in the vaccine group and Y is the number of COVID-19 cases in the placebo group. Restricting our attention to only the COVID-19 cases, we can define the random variable $T$ as the number of COVID-19 cases in the vaccine group given that the total number of COVID-19 cases in both groups is 170. In other words, $T$ is the value of $X$ given $X+Y=170$.
 
@@ -134,7 +170,7 @@ Finally, knowing that $n=170$ and since $n_v$ and $n_p$ are really large, we can
 
 
 
-#### Proof of $\psi = \frac{1-2\pi}{1-\pi}$:
+### Proof of $\psi = \frac{1-2\pi}{1-\pi}$:
 
 The definition of vaccine efficacy ($\psi$) is: $\psi = 1-\frac{\pi_v}{\pi_p}$, we can rewrite this in terms of $\pi$ using:
 $$\pi=\frac{\pi_v}{\pi_v+\pi_p}$$
@@ -147,7 +183,7 @@ $$\frac{\pi_v}{\pi_p}=\frac{\pi}{1-\pi}$$
 Plugging $\frac{\pi_v}{\pi_p}=\frac{\pi}{1-\pi}$ into $\psi = 1-\frac{\pi_v}{\pi_p}$, we get: $$\psi = 1-\frac{\pi}{1-\pi}$$ $$\psi = \frac{1-\pi}{1-\pi}-\frac{\pi}{1-\pi}$$ $$\boxed{\psi = \frac{1-2\pi}{1-\pi} \qquad -\infty < \psi < 1}$$
 
 
-#### Proof of $\pi=\frac{1-\psi}{2-\psi}$:
+### Proof of $\pi=\frac{1-\psi}{2-\psi}$:
 
 Using the equation we deduced in the previous proof we can rearrange $\psi = \frac{1-2\pi}{1-\pi}$ to create an equation for $\pi$ in terms of $\psi$. 
 $$\psi = \frac{1-2\pi}{1-\pi}$$
